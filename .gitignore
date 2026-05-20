@@ -1,0 +1,64 @@
+# ==========================================
+# .NET 8 Web API - Clean Architecture
+# ==========================================
+
+# 1. Build results (File biên dịch)
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+*.log
+
+# 2. Visual Studio, VS Code & JetBrains Rider
+.vs/
+.vscode/
+.idea/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.cache
+*.pdb
+*.sln.iml
+
+# 3. Environment & Secrets (QUAN TRỌNG NHẤT - BẢO MẬT)
+# KHÔNG BAO GIỜ đẩy chuỗi kết nối (Connection String) của local lên Git
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Staging.json
+.env
+secrets.json
+
+# (Tùy chọn) Chỉ giữ lại file appsettings gốc để làm template
+!appsettings.json
+
+# 4. Testing & Code Coverage (Dành cho Unit Test)
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage.json
+
+# 5. OS generated files (File rác của hệ điều hành)
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# 6. Database files (Nếu dùng LocalDB hoặc SQLite)
+*.mdf
+*.ldf
+*.ndf
+*.sqlite
+*.db
+
+# 7. File Uploads (Nếu API của bạn có endpoint nhận file upload)
+# Đường dẫn này có thể tùy chỉnh lại theo cấu trúc thư mục thực tế của bạn
+**/wwwroot/uploads/
+**/wwwroot/images/
+**/wwwroot/temp/
