@@ -62,3 +62,5 @@ Desktop.ini
 **/wwwroot/uploads/
 **/wwwroot/images/
 **/wwwroot/temp/
+
+.env
