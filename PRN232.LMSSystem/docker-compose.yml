@@ -5,13 +5,15 @@ services:
     image: postgres:alpine
     container_name: lms_postgres_db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: lmsdb
+      POSTGRES_USER: corn
+      POSTGRES_PASSWORD: corn244466666
+      POSTGRES_DB: LMSSystem
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - lms-network
 
@@ -26,7 +28,7 @@ services:
       - "8081:8081"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Host=lms-db;Port=5432;Database=lmsdb;Username=postgres;Password=postgres
+      - DB_CONNECTION_STRING=Host=lms-db;Port=5432;Database=LMSSystem;Username=corn;Password=corn244466666
     depends_on:
       - lms-db
     networks:

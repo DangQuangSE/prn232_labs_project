@@ -8,9 +8,10 @@ using PRN232.LMSSystem.Services.Services;
 using PRN232.LMSSystem.API.Helpers;
 
 using System.Reflection;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
-
+Env.Load();
 // Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -19,9 +20,11 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
 
-// Configure DbContext with PostgreSQL
+
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") 
+                       ?? builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<LMSDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // Register DataShaper for DTO responses
 builder.Services.AddScoped(typeof(IDataShaper<>), typeof(DataShaper<>));

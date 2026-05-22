@@ -62,5 +62,6 @@ Desktop.ini
 **/wwwroot/uploads/
 **/wwwroot/images/
 **/wwwroot/temp/
-
+# 8. Setting file
+docker-compose.yml
 .env
