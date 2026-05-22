@@ -32,8 +32,6 @@ public class CourseService : ICourseService
         int totalItems = await _courseRepository.CountAsync(filter);
         var pagination = new PaginationMetadata(queryParams.Page, queryParams.PageSize, totalItems);
 
-        var includes = new List<string> { "Semester", "Enrollments" };
-
         Func<IQueryable<Course>, IOrderedQueryable<Course>>? orderBy = null;
         if (!string.IsNullOrWhiteSpace(queryParams.Sort))
         {
@@ -44,26 +42,24 @@ public class CourseService : ICourseService
             orderBy = q => q.OrderBy(c => c.CourseId);
         }
 
-        var courses = await _courseRepository.GetAllAsync(
+        var courses = await _courseRepository.GetCoursesWithCountAsync(
             filter: filter,
             orderBy: orderBy,
-            includeProperties: includes,
             page: queryParams.Page,
             pageSize: queryParams.PageSize
         );
 
-        var responseList = courses.Select(MapToResponse);
+        var responseList = courses.Select(c => MapToResponse(c, queryParams.Expand));
 
         return (responseList, pagination);
     }
 
-    public async Task<CourseResponse?> GetByIdAsync(int id)
+    public async Task<CourseResponse?> GetByIdAsync(int id, string? expand = null)
     {
-        var includes = new List<string> { "Semester", "Enrollments" };
-        var course = await _courseRepository.GetByIdAsync(id, includes);
-        if (course == null) return null;
+        var courseWithCount = await _courseRepository.GetCourseWithCountByIdAsync(id);
+        if (courseWithCount == null) return null;
 
-        return MapToResponse(course);
+        return MapToResponse(courseWithCount, expand);
     }
 
     public async Task<CourseResponse> CreateAsync(CourseRequest request)
@@ -77,8 +73,12 @@ public class CourseService : ICourseService
         await _courseRepository.AddAsync(course);
         await _courseRepository.SaveAsync();
 
-        var loadedCourse = await _courseRepository.GetByIdAsync(course.CourseId, new List<string> { "Semester", "Enrollments" });
-        return MapToResponse(loadedCourse ?? course);
+        var loadedCourse = await _courseRepository.GetCourseWithCountByIdAsync(course.CourseId);
+        if (loadedCourse != null)
+        {
+            return MapToResponse(loadedCourse, null);
+        }
+        return MapToResponse(new CourseWithCount { Course = course, EnrollmentCount = 0 }, null);
     }
 
     public async Task<bool> UpdateAsync(int id, CourseRequest request)
@@ -114,17 +114,35 @@ public class CourseService : ICourseService
         };
     }
 
-    private CourseResponse MapToResponse(Course course)
+    private CourseResponse MapToResponse(CourseWithCount courseWithCount, string? expand = null)
     {
+        var course = courseWithCount.Course;
         var bm = MapToBusinessModel(course);
         
-        return new CourseResponse
+        var response = new CourseResponse
         {
             CourseId = bm.CourseId,
             CourseName = bm.CourseName,
             SemesterId = bm.SemesterId,
             SemesterName = course.Semester?.SemesterName,
-            EnrollmentCount = course.Enrollments?.Count ?? 0
+            EnrollmentCount = courseWithCount.EnrollmentCount
         };
+
+        if (!string.IsNullOrWhiteSpace(expand))
+        {
+            var expands = expand.ToLower().Split(',');
+            if (expands.Contains("semester") && course.Semester != null)
+            {
+                response.Semester = new SemesterResponse
+                {
+                    SemesterId = course.Semester.SemesterId,
+                    SemesterName = course.Semester.SemesterName,
+                    StartDate = course.Semester.StartDate,
+                    EndDate = course.Semester.EndDate
+                };
+            }
+        }
+
+        return response;
     }
 }

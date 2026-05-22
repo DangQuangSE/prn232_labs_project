@@ -9,3 +9,4 @@ public class Course
     public Semester Semester { get; set; } = null!;
     public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 }
+

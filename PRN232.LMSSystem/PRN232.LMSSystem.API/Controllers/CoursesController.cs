@@ -31,9 +31,9 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id, [FromQuery] string? fields = null)
+    public async Task<IActionResult> GetById(int id, [FromQuery] string? expand = null, [FromQuery] string? fields = null)
     {
-        var course = await _courseService.GetByIdAsync(id);
+        var course = await _courseService.GetByIdAsync(id, expand);
         if (course == null)
         {
             return NotFound(ApiResponse<object>.ErrorResponse($"Course with ID {id} not found"));
