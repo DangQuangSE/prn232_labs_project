@@ -1,5 +1,6 @@
 using PRN232.LMSSystem.Repositories.Entities;
 using PRN232.LMSSystem.Repositories.Interfaces;
+using PRN232.LMSSystem.Services.Exceptions;
 using PRN232.LMSSystem.Services.Helpers;
 using PRN232.LMSSystem.Services.Interfaces;
 using PRN232.LMSSystem.Services.Models.Business;
@@ -33,13 +34,9 @@ public class SubjectService : ISubjectService
 
         Func<IQueryable<Subject>, IOrderedQueryable<Subject>>? orderBy = null;
         if (!string.IsNullOrWhiteSpace(queryParams.Sort))
-        {
             orderBy = q => (IOrderedQueryable<Subject>)QueryHelper.ApplySort(q, queryParams.Sort);
-        }
         else
-        {
             orderBy = q => q.OrderBy(s => s.SubjectId);
-        }
 
         var subjects = await _subjectRepository.GetAllAsync(
             filter: filter,
@@ -48,15 +45,13 @@ public class SubjectService : ISubjectService
             pageSize: queryParams.PageSize
         );
 
-        var responseList = subjects.Select(MapToResponse);
-
-        return (responseList, pagination);
+        return (subjects.Select(MapToResponse), pagination);
     }
 
-    public async Task<SubjectResponse?> GetByIdAsync(int id)
+    public async Task<SubjectResponse> GetByIdAsync(int id)
     {
-        var subject = await _subjectRepository.GetByIdAsync(id);
-        if (subject == null) return null;
+        var subject = await _subjectRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Subject", id);
 
         return MapToResponse(subject);
     }
@@ -76,10 +71,10 @@ public class SubjectService : ISubjectService
         return MapToResponse(subject);
     }
 
-    public async Task<bool> UpdateAsync(int id, SubjectRequest request)
+    public async Task UpdateAsync(int id, SubjectRequest request)
     {
-        var subject = await _subjectRepository.GetByIdAsync(id);
-        if (subject == null) return false;
+        var subject = await _subjectRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Subject", id);
 
         subject.SubjectCode = request.SubjectCode;
         subject.SubjectName = request.SubjectName;
@@ -87,34 +82,28 @@ public class SubjectService : ISubjectService
 
         _subjectRepository.Update(subject);
         await _subjectRepository.SaveAsync();
-        return true;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task DeleteAsync(int id)
     {
-        var subject = await _subjectRepository.GetByIdAsync(id);
-        if (subject == null) return false;
+        var subject = await _subjectRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Subject", id);
 
         _subjectRepository.Delete(subject);
         await _subjectRepository.SaveAsync();
-        return true;
     }
 
-    private SubjectBM MapToBusinessModel(Subject subject)
+    private SubjectBM MapToBusinessModel(Subject subject) => new()
     {
-        return new SubjectBM
-        {
-            SubjectId = subject.SubjectId,
-            SubjectCode = subject.SubjectCode,
-            SubjectName = subject.SubjectName,
-            Credit = subject.Credit
-        };
-    }
+        SubjectId = subject.SubjectId,
+        SubjectCode = subject.SubjectCode,
+        SubjectName = subject.SubjectName,
+        Credit = subject.Credit
+    };
 
     private SubjectResponse MapToResponse(Subject subject)
     {
         var bm = MapToBusinessModel(subject);
-        
         return new SubjectResponse
         {
             SubjectId = bm.SubjectId,

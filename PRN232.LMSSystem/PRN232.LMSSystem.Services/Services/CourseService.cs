@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PRN232.LMSSystem.Repositories.Entities;
 using PRN232.LMSSystem.Repositories.Interfaces;
+using PRN232.LMSSystem.Services.Exceptions;
 using PRN232.LMSSystem.Services.Helpers;
 using PRN232.LMSSystem.Services.Interfaces;
 using PRN232.LMSSystem.Services.Models.Business;
@@ -34,13 +35,9 @@ public class CourseService : ICourseService
 
         Func<IQueryable<Course>, IOrderedQueryable<Course>>? orderBy = null;
         if (!string.IsNullOrWhiteSpace(queryParams.Sort))
-        {
             orderBy = q => (IOrderedQueryable<Course>)QueryHelper.ApplySort(q, queryParams.Sort);
-        }
         else
-        {
             orderBy = q => q.OrderBy(c => c.CourseId);
-        }
 
         var courses = await _courseRepository.GetCoursesWithCountAsync(
             filter: filter,
@@ -49,15 +46,13 @@ public class CourseService : ICourseService
             pageSize: queryParams.PageSize
         );
 
-        var responseList = courses.Select(c => MapToResponse(c, queryParams.Expand));
-
-        return (responseList, pagination);
+        return (courses.Select(c => MapToResponse(c, queryParams.Expand)), pagination);
     }
 
-    public async Task<CourseResponse?> GetByIdAsync(int id, string? expand = null)
+    public async Task<CourseResponse> GetByIdAsync(int id, string? expand = null)
     {
-        var courseWithCount = await _courseRepository.GetCourseWithCountByIdAsync(id);
-        if (courseWithCount == null) return null;
+        var courseWithCount = await _courseRepository.GetCourseWithCountByIdAsync(id)
+            ?? throw new NotFoundException("Course", id);
 
         return MapToResponse(courseWithCount, expand);
     }
@@ -73,52 +68,43 @@ public class CourseService : ICourseService
         await _courseRepository.AddAsync(course);
         await _courseRepository.SaveAsync();
 
-        var loadedCourse = await _courseRepository.GetCourseWithCountByIdAsync(course.CourseId);
-        if (loadedCourse != null)
-        {
-            return MapToResponse(loadedCourse, null);
-        }
-        return MapToResponse(new CourseWithCount { Course = course, EnrollmentCount = 0 }, null);
+        var loaded = await _courseRepository.GetCourseWithCountByIdAsync(course.CourseId);
+        return MapToResponse(loaded ?? new CourseWithCount { Course = course, EnrollmentCount = 0 }, null);
     }
 
-    public async Task<bool> UpdateAsync(int id, CourseRequest request)
+    public async Task UpdateAsync(int id, CourseRequest request)
     {
-        var course = await _courseRepository.GetByIdAsync(id);
-        if (course == null) return false;
+        var course = await _courseRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Course", id);
 
         course.CourseName = request.CourseName;
         course.SemesterId = request.SemesterId;
 
         _courseRepository.Update(course);
         await _courseRepository.SaveAsync();
-        return true;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task DeleteAsync(int id)
     {
-        var course = await _courseRepository.GetByIdAsync(id);
-        if (course == null) return false;
+        var course = await _courseRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Course", id);
 
         _courseRepository.Delete(course);
         await _courseRepository.SaveAsync();
-        return true;
     }
 
-    private CourseBM MapToBusinessModel(Course course)
+    private CourseBM MapToBusinessModel(Course course) => new()
     {
-        return new CourseBM
-        {
-            CourseId = course.CourseId,
-            CourseName = course.CourseName,
-            SemesterId = course.SemesterId
-        };
-    }
+        CourseId = course.CourseId,
+        CourseName = course.CourseName,
+        SemesterId = course.SemesterId
+    };
 
     private CourseResponse MapToResponse(CourseWithCount courseWithCount, string? expand = null)
     {
         var course = courseWithCount.Course;
         var bm = MapToBusinessModel(course);
-        
+
         var response = new CourseResponse
         {
             CourseId = bm.CourseId,

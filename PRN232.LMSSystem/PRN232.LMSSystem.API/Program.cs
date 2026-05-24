@@ -64,6 +64,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 
     options.ParameterFilter<LowercaseQueryParameterFilter>();
+    options.OperationFilter<DefaultResponsesOperationFilter>();
 
     // Include XML comments from API project
     var apiXmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -78,6 +79,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<PRN232.LMSSystem.API.Middleware.GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {

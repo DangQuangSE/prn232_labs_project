@@ -1,6 +1,6 @@
-
 using PRN232.LMSSystem.Repositories.Entities;
 using PRN232.LMSSystem.Repositories.Interfaces;
+using PRN232.LMSSystem.Services.Exceptions;
 using PRN232.LMSSystem.Services.Helpers;
 using PRN232.LMSSystem.Services.Interfaces;
 using PRN232.LMSSystem.Services.Models.Business;
@@ -22,8 +22,6 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<(IEnumerable<EnrollmentResponse> Data, PaginationMetadata Pagination)> GetAllAsync(QueryParameters queryParams)
     {
-        // Always include Student and Course for search (navigations used in filter expression)
-        // and additionally for Expand if requested
         var includes = new List<string> { "Student", "Course" };
 
         Expression<Func<Enrollment, bool>>? filter = null;
@@ -38,25 +36,18 @@ public class EnrollmentService : IEnrollmentService
         int totalItems = await _enrollmentRepository.CountAsync(filter);
         var pagination = new PaginationMetadata(queryParams.Page, queryParams.PageSize, totalItems);
 
-        // Add Semester include when expanding course
         if (!string.IsNullOrWhiteSpace(queryParams.Expand))
         {
             var expands = queryParams.Expand.ToLower().Split(',');
             if (expands.Contains("course"))
-            {
                 includes.Add("Course.Semester");
-            }
         }
 
         Func<IQueryable<Enrollment>, IOrderedQueryable<Enrollment>>? orderBy = null;
         if (!string.IsNullOrWhiteSpace(queryParams.Sort))
-        {
             orderBy = q => (IOrderedQueryable<Enrollment>)QueryHelper.ApplySort(q, queryParams.Sort);
-        }
         else
-        {
             orderBy = q => q.OrderBy(e => e.EnrollmentId);
-        }
 
         var enrollments = await _enrollmentRepository.GetAllAsync(
             filter: filter,
@@ -66,27 +57,22 @@ public class EnrollmentService : IEnrollmentService
             pageSize: queryParams.PageSize
         );
 
-        var responseList = enrollments.Select(e => MapToResponse(e, queryParams.Expand));
-
-        return (responseList, pagination);
+        return (enrollments.Select(e => MapToResponse(e, queryParams.Expand)), pagination);
     }
 
-    public async Task<EnrollmentResponse?> GetByIdAsync(int id, string? expand = null)
+    public async Task<EnrollmentResponse> GetByIdAsync(int id, string? expand = null)
     {
-        // Always load Student and Course for base fields (StudentName, CourseName)
         var includes = new List<string> { "Student", "Course" };
 
         if (!string.IsNullOrWhiteSpace(expand))
         {
             var expands = expand.ToLower().Split(',');
             if (expands.Contains("course"))
-            {
                 includes.Add("Course.Semester");
-            }
         }
 
-        var enrollment = await _enrollmentRepository.GetByIdAsync(id, includes);
-        if (enrollment == null) return null;
+        var enrollment = await _enrollmentRepository.GetByIdAsync(id, includes)
+            ?? throw new NotFoundException("Enrollment", id);
 
         return MapToResponse(enrollment, expand);
     }
@@ -108,10 +94,10 @@ public class EnrollmentService : IEnrollmentService
         return MapToResponse(loaded ?? enrollment, "student,course");
     }
 
-    public async Task<bool> UpdateAsync(int id, EnrollmentRequest request)
+    public async Task UpdateAsync(int id, EnrollmentRequest request)
     {
-        var enrollment = await _enrollmentRepository.GetByIdAsync(id);
-        if (enrollment == null) return false;
+        var enrollment = await _enrollmentRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Enrollment", id);
 
         enrollment.StudentId = request.StudentId;
         enrollment.CourseId = request.CourseId;
@@ -120,35 +106,30 @@ public class EnrollmentService : IEnrollmentService
 
         _enrollmentRepository.Update(enrollment);
         await _enrollmentRepository.SaveAsync();
-        return true;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task DeleteAsync(int id)
     {
-        var enrollment = await _enrollmentRepository.GetByIdAsync(id);
-        if (enrollment == null) return false;
+        var enrollment = await _enrollmentRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Enrollment", id);
 
         _enrollmentRepository.Delete(enrollment);
         await _enrollmentRepository.SaveAsync();
-        return true;
     }
 
-    private EnrollmentBM MapToBusinessModel(Enrollment enrollment)
+    private EnrollmentBM MapToBusinessModel(Enrollment enrollment) => new()
     {
-        return new EnrollmentBM
-        {
-            EnrollmentId = enrollment.EnrollmentId,
-            StudentId = enrollment.StudentId,
-            CourseId = enrollment.CourseId,
-            EnrollDate = enrollment.EnrollDate,
-            Status = enrollment.Status
-        };
-    }
+        EnrollmentId = enrollment.EnrollmentId,
+        StudentId = enrollment.StudentId,
+        CourseId = enrollment.CourseId,
+        EnrollDate = enrollment.EnrollDate,
+        Status = enrollment.Status
+    };
 
     private EnrollmentResponse MapToResponse(Enrollment enrollment, string? expand = null)
     {
         var bm = MapToBusinessModel(enrollment);
-        
+
         var response = new EnrollmentResponse
         {
             EnrollmentId = bm.EnrollmentId,
@@ -163,7 +144,7 @@ public class EnrollmentService : IEnrollmentService
         if (!string.IsNullOrWhiteSpace(expand))
         {
             var expands = expand.ToLower().Split(',');
-            
+
             if (expands.Contains("student") && enrollment.Student != null)
             {
                 response.Student = new StudentResponse
@@ -174,7 +155,7 @@ public class EnrollmentService : IEnrollmentService
                     DateOfBirth = enrollment.Student.DateOfBirth
                 };
             }
-            
+
             if (expands.Contains("course") && enrollment.Course != null)
             {
                 response.Course = new CourseResponse
