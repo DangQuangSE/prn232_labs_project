@@ -63,6 +63,9 @@ builder.Services.AddSwaggerGen(options =>
         Description = "An ASP.NET Core Web API for learning management system using a 3-layer architecture."
     });
 
+    options.ParameterFilter<LowercaseQueryParameterFilter>();
+    options.OperationFilter<DefaultResponsesOperationFilter>();
+
     // Include XML comments from API project
     var apiXmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var apiXmlPath = Path.Combine(AppContext.BaseDirectory, apiXmlFile);
@@ -76,6 +79,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<PRN232.LMSSystem.API.Middleware.GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {

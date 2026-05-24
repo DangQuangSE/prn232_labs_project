@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PRN232.LMSSystem.Repositories.Entities;
 using PRN232.LMSSystem.Repositories.Interfaces;
+using PRN232.LMSSystem.Services.Exceptions;
 using PRN232.LMSSystem.Services.Helpers;
 using PRN232.LMSSystem.Services.Interfaces;
 using PRN232.LMSSystem.Services.Models.Business;
@@ -45,13 +46,9 @@ public class StudentService : IStudentService
 
         Func<IQueryable<Student>, IOrderedQueryable<Student>>? orderBy = null;
         if (!string.IsNullOrWhiteSpace(queryParams.Sort))
-        {
             orderBy = q => (IOrderedQueryable<Student>)QueryHelper.ApplySort(q, queryParams.Sort);
-        }
         else
-        {
             orderBy = q => q.OrderBy(s => s.StudentId);
-        }
 
         var students = await _studentRepository.GetAllAsync(
             filter: filter,
@@ -61,12 +58,10 @@ public class StudentService : IStudentService
             pageSize: queryParams.PageSize
         );
 
-        var responseList = students.Select(s => MapToResponse(s, queryParams.Expand));
-
-        return (responseList, pagination);
+        return (students.Select(s => MapToResponse(s, queryParams.Expand)), pagination);
     }
 
-    public async Task<StudentResponse?> GetByIdAsync(int id, string? expand = null)
+    public async Task<StudentResponse> GetByIdAsync(int id, string? expand = null)
     {
         var includes = new List<string>();
         if (!string.IsNullOrWhiteSpace(expand))
@@ -79,8 +74,8 @@ public class StudentService : IStudentService
             }
         }
 
-        var student = await _studentRepository.GetByIdAsync(id, includes);
-        if (student == null) return null;
+        var student = await _studentRepository.GetByIdAsync(id, includes)
+            ?? throw new NotFoundException("Student", id);
 
         return MapToResponse(student, expand);
     }
@@ -100,10 +95,10 @@ public class StudentService : IStudentService
         return MapToResponse(student, null);
     }
 
-    public async Task<bool> UpdateAsync(int id, StudentRequest request)
+    public async Task UpdateAsync(int id, StudentRequest request)
     {
-        var student = await _studentRepository.GetByIdAsync(id);
-        if (student == null) return false;
+        var student = await _studentRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Student", id);
 
         student.FullName = request.FullName;
         student.Email = request.Email;
@@ -111,34 +106,29 @@ public class StudentService : IStudentService
 
         _studentRepository.Update(student);
         await _studentRepository.SaveAsync();
-        return true;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task DeleteAsync(int id)
     {
-        var student = await _studentRepository.GetByIdAsync(id);
-        if (student == null) return false;
+        var student = await _studentRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Student", id);
 
         _studentRepository.Delete(student);
         await _studentRepository.SaveAsync();
-        return true;
     }
 
-    private StudentBM MapToBusinessModel(Student student)
+    private StudentBM MapToBusinessModel(Student student) => new()
     {
-        return new StudentBM
-        {
-            StudentId = student.StudentId,
-            FullName = student.FullName,
-            Email = student.Email,
-            DateOfBirth = student.DateOfBirth
-        };
-    }
+        StudentId = student.StudentId,
+        FullName = student.FullName,
+        Email = student.Email,
+        DateOfBirth = student.DateOfBirth
+    };
 
     private StudentResponse MapToResponse(Student student, string? expand)
     {
         var bm = MapToBusinessModel(student);
-        
+
         var response = new StudentResponse
         {
             StudentId = bm.StudentId,

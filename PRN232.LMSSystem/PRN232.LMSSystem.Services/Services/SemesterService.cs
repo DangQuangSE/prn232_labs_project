@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PRN232.LMSSystem.Repositories.Entities;
 using PRN232.LMSSystem.Repositories.Interfaces;
+using PRN232.LMSSystem.Services.Exceptions;
 using PRN232.LMSSystem.Services.Helpers;
 using PRN232.LMSSystem.Services.Interfaces;
 using PRN232.LMSSystem.Services.Models.Business;
@@ -32,36 +33,27 @@ public class SemesterService : ISemesterService
         int totalItems = await _semesterRepository.CountAsync(filter);
         var pagination = new PaginationMetadata(queryParams.Page, queryParams.PageSize, totalItems);
 
-        var includes = new List<string> { "Courses" };
-
         Func<IQueryable<Semester>, IOrderedQueryable<Semester>>? orderBy = null;
         if (!string.IsNullOrWhiteSpace(queryParams.Sort))
-        {
             orderBy = q => (IOrderedQueryable<Semester>)QueryHelper.ApplySort(q, queryParams.Sort);
-        }
         else
-        {
             orderBy = q => q.OrderBy(s => s.SemesterId);
-        }
 
         var semesters = await _semesterRepository.GetAllAsync(
             filter: filter,
             orderBy: orderBy,
-            includeProperties: includes,
+            includeProperties: new List<string> { "Courses" },
             page: queryParams.Page,
             pageSize: queryParams.PageSize
         );
 
-        var responseList = semesters.Select(MapToResponse);
-
-        return (responseList, pagination);
+        return (semesters.Select(MapToResponse), pagination);
     }
 
-    public async Task<SemesterResponse?> GetByIdAsync(int id)
+    public async Task<SemesterResponse> GetByIdAsync(int id)
     {
-        var includes = new List<string> { "Courses" };
-        var semester = await _semesterRepository.GetByIdAsync(id, includes);
-        if (semester == null) return null;
+        var semester = await _semesterRepository.GetByIdAsync(id, new List<string> { "Courses" })
+            ?? throw new NotFoundException("Semester", id);
 
         return MapToResponse(semester);
     }
@@ -81,10 +73,10 @@ public class SemesterService : ISemesterService
         return MapToResponse(semester);
     }
 
-    public async Task<bool> UpdateAsync(int id, SemesterRequest request)
+    public async Task UpdateAsync(int id, SemesterRequest request)
     {
-        var semester = await _semesterRepository.GetByIdAsync(id);
-        if (semester == null) return false;
+        var semester = await _semesterRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Semester", id);
 
         semester.SemesterName = request.SemesterName;
         semester.StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc);
@@ -92,34 +84,28 @@ public class SemesterService : ISemesterService
 
         _semesterRepository.Update(semester);
         await _semesterRepository.SaveAsync();
-        return true;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task DeleteAsync(int id)
     {
-        var semester = await _semesterRepository.GetByIdAsync(id);
-        if (semester == null) return false;
+        var semester = await _semesterRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Semester", id);
 
         _semesterRepository.Delete(semester);
         await _semesterRepository.SaveAsync();
-        return true;
     }
 
-    private SemesterBM MapToBusinessModel(Semester semester)
+    private SemesterBM MapToBusinessModel(Semester semester) => new()
     {
-        return new SemesterBM
-        {
-            SemesterId = semester.SemesterId,
-            SemesterName = semester.SemesterName,
-            StartDate = semester.StartDate,
-            EndDate = semester.EndDate
-        };
-    }
+        SemesterId = semester.SemesterId,
+        SemesterName = semester.SemesterName,
+        StartDate = semester.StartDate,
+        EndDate = semester.EndDate
+    };
 
     private SemesterResponse MapToResponse(Semester semester)
     {
         var bm = MapToBusinessModel(semester);
-        
         return new SemesterResponse
         {
             SemesterId = bm.SemesterId,

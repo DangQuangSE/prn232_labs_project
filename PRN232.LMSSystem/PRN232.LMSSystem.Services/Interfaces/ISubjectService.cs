@@ -7,8 +7,8 @@ namespace PRN232.LMSSystem.Services.Interfaces;
 public interface ISubjectService
 {
     Task<(IEnumerable<SubjectResponse> Data, PaginationMetadata Pagination)> GetAllAsync(QueryParameters queryParams);
-    Task<SubjectResponse?> GetByIdAsync(int id);
+    Task<SubjectResponse> GetByIdAsync(int id);
     Task<SubjectResponse> CreateAsync(SubjectRequest request);
-    Task<bool> UpdateAsync(int id, SubjectRequest request);
-    Task<bool> DeleteAsync(int id);
+    Task UpdateAsync(int id, SubjectRequest request);
+    Task DeleteAsync(int id);
 }

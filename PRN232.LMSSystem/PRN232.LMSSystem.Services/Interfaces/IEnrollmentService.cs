@@ -7,8 +7,8 @@ namespace PRN232.LMSSystem.Services.Interfaces;
 public interface IEnrollmentService
 {
     Task<(IEnumerable<EnrollmentResponse> Data, PaginationMetadata Pagination)> GetAllAsync(QueryParameters queryParams);
-    Task<EnrollmentResponse?> GetByIdAsync(int id, string? expand = null);
+    Task<EnrollmentResponse> GetByIdAsync(int id, string? expand = null);
     Task<EnrollmentResponse> CreateAsync(EnrollmentRequest request);
-    Task<bool> UpdateAsync(int id, EnrollmentRequest request);
-    Task<bool> DeleteAsync(int id);
+    Task UpdateAsync(int id, EnrollmentRequest request);
+    Task DeleteAsync(int id);
 }

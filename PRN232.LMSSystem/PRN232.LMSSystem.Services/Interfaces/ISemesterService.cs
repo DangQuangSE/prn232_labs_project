@@ -7,8 +7,8 @@ namespace PRN232.LMSSystem.Services.Interfaces;
 public interface ISemesterService
 {
     Task<(IEnumerable<SemesterResponse> Data, PaginationMetadata Pagination)> GetAllAsync(QueryParameters queryParams);
-    Task<SemesterResponse?> GetByIdAsync(int id);
+    Task<SemesterResponse> GetByIdAsync(int id);
     Task<SemesterResponse> CreateAsync(SemesterRequest request);
-    Task<bool> UpdateAsync(int id, SemesterRequest request);
-    Task<bool> DeleteAsync(int id);
+    Task UpdateAsync(int id, SemesterRequest request);
+    Task DeleteAsync(int id);
 }

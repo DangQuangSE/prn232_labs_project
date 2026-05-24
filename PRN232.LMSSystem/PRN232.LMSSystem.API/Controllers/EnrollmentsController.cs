@@ -21,66 +21,51 @@ public class EnrollmentsController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<EnrollmentResponse>>), 200)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParams)
     {
         var (data, pagination) = await _enrollmentService.GetAllAsync(queryParams);
         var shapedData = _dataShaper.ShapeData(data, queryParams.Fields);
-        
-        var response = ApiResponse<object>.SuccessResponse(shapedData, "Enrollments retrieved successfully", pagination);
-        return Ok(response);
+        return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Enrollments retrieved successfully", pagination));
     }
 
     [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<EnrollmentResponse>), 200)]
     public async Task<IActionResult> GetById(int id, [FromQuery] string? expand = null, [FromQuery] string? fields = null)
     {
         var enrollment = await _enrollmentService.GetByIdAsync(id, expand);
-        if (enrollment == null)
-        {
-            return NotFound(ApiResponse<object>.ErrorResponse($"Enrollment with ID {id} not found"));
-        }
-
         var shapedData = _dataShaper.ShapeData(enrollment, fields);
         return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Enrollment retrieved successfully"));
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<EnrollmentResponse>), 201)]
     public async Task<IActionResult> Create([FromBody] EnrollmentRequest request)
     {
         if (!ModelState.IsValid)
-        {
-            return BadRequest(ApiResponse<object>.ErrorResponse("Invalid data", ModelState));
-        }
+            return BadRequest(ApiResponse<object>.ErrorResponse("Invalid request data", ModelState));
 
         var enrollment = await _enrollmentService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = enrollment.EnrollmentId }, ApiResponse<EnrollmentResponse>.SuccessResponse(enrollment, "Enrollment created successfully"));
+        return CreatedAtAction(nameof(GetById), new { id = enrollment.EnrollmentId },
+            ApiResponse<EnrollmentResponse>.SuccessResponse(enrollment, "Enrollment created successfully"));
     }
 
     [HttpPut("{id}")]
+    [ProducesResponseType(200)]
     public async Task<IActionResult> Update(int id, [FromBody] EnrollmentRequest request)
     {
         if (!ModelState.IsValid)
-        {
-            return BadRequest(ApiResponse<object>.ErrorResponse("Invalid data", ModelState));
-        }
+            return BadRequest(ApiResponse<object>.ErrorResponse("Invalid request data", ModelState));
 
-        var updated = await _enrollmentService.UpdateAsync(id, request);
-        if (!updated)
-        {
-            return NotFound(ApiResponse<object>.ErrorResponse($"Enrollment with ID {id} not found"));
-        }
-
+        await _enrollmentService.UpdateAsync(id, request);
         return Ok(ApiResponse<object>.SuccessResponse(null, "Enrollment updated successfully"));
     }
 
     [HttpDelete("{id}")]
+    [ProducesResponseType(200)]
     public async Task<IActionResult> Delete(int id)
     {
-        var deleted = await _enrollmentService.DeleteAsync(id);
-        if (!deleted)
-        {
-            return NotFound(ApiResponse<object>.ErrorResponse($"Enrollment with ID {id} not found"));
-        }
-
+        await _enrollmentService.DeleteAsync(id);
         return Ok(ApiResponse<object>.SuccessResponse(null, "Enrollment deleted successfully"));
     }
 }
