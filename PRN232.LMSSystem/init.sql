@@ -51,9 +51,10 @@ SELECT 'Student ' || i, 'student' || i || '@example.edu', NOW() - (interval '18 
 FROM generate_series(1, 50) AS i;
 
 INSERT INTO "Enrollment" ("StudentId", "CourseId", "EnrollDate", "Status")
-SELECT 
-    floor(random() * 50 + 1)::int, 
-    floor(random() * 20 + 1)::int, 
+SELECT
+    floor(random() * 50 + 1)::int,
+    floor(random() * 20 + 1)::int,
     NOW() - (random() * 100 * interval '1 day'),
     CASE WHEN random() > 0.5 THEN 'Active' ELSE 'Completed' END
-FROM generate_series(1, 500) AS i;
+FROM generate_series(1, 500) AS i
+ON CONFLICT DO NOTHING;

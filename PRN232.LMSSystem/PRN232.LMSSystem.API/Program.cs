@@ -63,6 +63,8 @@ builder.Services.AddSwaggerGen(options =>
         Description = "An ASP.NET Core Web API for learning management system using a 3-layer architecture."
     });
 
+    options.ParameterFilter<LowercaseQueryParameterFilter>();
+
     // Include XML comments from API project
     var apiXmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var apiXmlPath = Path.Combine(AppContext.BaseDirectory, apiXmlFile);

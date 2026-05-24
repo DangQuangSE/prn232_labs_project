@@ -9,22 +9,18 @@ public class QueryParameters
     private int _pageSize = 10;
 
     /// <summary>Search keyword to filter results. Searches across relevant text fields (e.g. name, email, status).</summary>
-    /// <example>nguyen</example>
     public string? Search { get; set; }
 
     /// <summary>
     /// Comma-separated field names to sort by. Prefix with '-' for descending order.
     /// Example: "fullName" for ascending, "-dateOfBirth" for descending, "fullName,-dateOfBirth" for multi-sort.
     /// </summary>
-    /// <example>-enrollDate</example>
     public string? Sort { get; set; }
 
     /// <summary>Page number (1-based). Defaults to 1.</summary>
-    /// <example>1</example>
     public int Page { get; set; } = 1;
 
     /// <summary>Number of items per page. Defaults to 10, max 250.</summary>
-    /// <example>10</example>
     public int PageSize
     {
         get => _pageSize;
@@ -32,7 +28,6 @@ public class QueryParameters
     }
 
     /// <summary>Alias for PageSize. Number of items per page. Defaults to 10, max 250.</summary>
-    /// <example>10</example>
     public int Size
     {
         get => PageSize;
@@ -44,13 +39,11 @@ public class QueryParameters
     /// If omitted, all fields are returned.
     /// Example: "studentId,fullName,email"
     /// </summary>
-    /// <example>enrollmentId,status</example>
     public string? Fields { get; set; }
 
     /// <summary>
     /// Comma-separated related entities to include in the response (expansion).
     /// Available expansions depend on the resource: e.g. "student,course" for enrollments, "enrollments" for students.
     /// </summary>
-    /// <example>student,course</example>
     public string? Expand { get; set; }
 }

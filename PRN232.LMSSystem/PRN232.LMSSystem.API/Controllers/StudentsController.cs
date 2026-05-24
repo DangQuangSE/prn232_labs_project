@@ -21,16 +21,19 @@ public class StudentsController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<StudentResponse>>), 200)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParams)
     {
         var (data, pagination) = await _studentService.GetAllAsync(queryParams);
         var shapedData = _dataShaper.ShapeData(data, queryParams.Fields);
-        
+
         var response = ApiResponse<object>.SuccessResponse(shapedData, "Students retrieved successfully", pagination);
         return Ok(response);
     }
 
     [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<StudentResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 404)]
     public async Task<IActionResult> GetById(int id, [FromQuery] string? expand = null, [FromQuery] string? fields = null)
     {
         var student = await _studentService.GetByIdAsync(id, expand);
@@ -44,6 +47,8 @@ public class StudentsController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<StudentResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
     public async Task<IActionResult> Create([FromBody] StudentRequest request)
     {
         if (!ModelState.IsValid)
@@ -56,6 +61,9 @@ public class StudentsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 404)]
     public async Task<IActionResult> Update(int id, [FromBody] StudentRequest request)
     {
         if (!ModelState.IsValid)
@@ -73,6 +81,8 @@ public class StudentsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 404)]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _studentService.DeleteAsync(id);

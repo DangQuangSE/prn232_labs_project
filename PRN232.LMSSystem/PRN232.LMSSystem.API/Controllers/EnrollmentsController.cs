@@ -21,16 +21,19 @@ public class EnrollmentsController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<EnrollmentResponse>>), 200)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParams)
     {
         var (data, pagination) = await _enrollmentService.GetAllAsync(queryParams);
         var shapedData = _dataShaper.ShapeData(data, queryParams.Fields);
-        
+
         var response = ApiResponse<object>.SuccessResponse(shapedData, "Enrollments retrieved successfully", pagination);
         return Ok(response);
     }
 
     [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<EnrollmentResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 404)]
     public async Task<IActionResult> GetById(int id, [FromQuery] string? expand = null, [FromQuery] string? fields = null)
     {
         var enrollment = await _enrollmentService.GetByIdAsync(id, expand);
@@ -44,6 +47,8 @@ public class EnrollmentsController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<EnrollmentResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
     public async Task<IActionResult> Create([FromBody] EnrollmentRequest request)
     {
         if (!ModelState.IsValid)
@@ -56,6 +61,9 @@ public class EnrollmentsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 404)]
     public async Task<IActionResult> Update(int id, [FromBody] EnrollmentRequest request)
     {
         if (!ModelState.IsValid)
@@ -73,6 +81,8 @@ public class EnrollmentsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 404)]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _enrollmentService.DeleteAsync(id);

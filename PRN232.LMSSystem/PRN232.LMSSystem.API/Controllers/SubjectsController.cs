@@ -21,16 +21,19 @@ public class SubjectsController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<SubjectResponse>>), 200)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParams)
     {
         var (data, pagination) = await _subjectService.GetAllAsync(queryParams);
         var shapedData = _dataShaper.ShapeData(data, queryParams.Fields);
-        
+
         var response = ApiResponse<object>.SuccessResponse(shapedData, "Subjects retrieved successfully", pagination);
         return Ok(response);
     }
 
     [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<SubjectResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 404)]
     public async Task<IActionResult> GetById(int id, [FromQuery] string? fields = null)
     {
         var subject = await _subjectService.GetByIdAsync(id);
@@ -44,6 +47,8 @@ public class SubjectsController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<SubjectResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
     public async Task<IActionResult> Create([FromBody] SubjectRequest request)
     {
         if (!ModelState.IsValid)
@@ -56,6 +61,9 @@ public class SubjectsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 404)]
     public async Task<IActionResult> Update(int id, [FromBody] SubjectRequest request)
     {
         if (!ModelState.IsValid)
@@ -73,6 +81,8 @@ public class SubjectsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 404)]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _subjectService.DeleteAsync(id);
