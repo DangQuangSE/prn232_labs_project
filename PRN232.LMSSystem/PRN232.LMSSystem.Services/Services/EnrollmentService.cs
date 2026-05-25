@@ -60,16 +60,9 @@ public class EnrollmentService : IEnrollmentService
         return (enrollments.Select(e => MapToResponse(e, queryParams.Expand)), pagination);
     }
 
-    public async Task<(IEnumerable<EnrollmentResponse> Data, PaginationMetadata Pagination)> GetByCourseIdAsync(int courseId, QueryParameters queryParams)
+    public async Task<(IEnumerable<EnrollmentOfCourseResponse> Data, PaginationMetadata Pagination)> GetByCourseIdAsync(int courseId, QueryParameters queryParams)
     {
-        var includes = new List<string> { "Student", "Course" };
-
-        if (!string.IsNullOrWhiteSpace(queryParams.Expand))
-        {
-            var expands = queryParams.Expand.ToLower().Split(',');
-            if (expands.Contains("course"))
-                includes.Add("Course.Semester");
-        }
+        var includes = new List<string> { "Student" };
 
         Expression<Func<Enrollment, bool>> baseFilter = e => e.CourseId == courseId;
 
@@ -98,7 +91,33 @@ public class EnrollmentService : IEnrollmentService
             pageSize: queryParams.PageSize
         );
 
-        return (enrollments.Select(e => MapToResponse(e, queryParams.Expand)), pagination);
+        var expands = queryParams.Expand?.ToLower().Split(',') ?? [];
+        return (enrollments.Select(e => MapToEnrollmentOfCourseResponse(e, expands)), pagination);
+    }
+
+    private EnrollmentOfCourseResponse MapToEnrollmentOfCourseResponse(Enrollment enrollment, string[] expands)
+    {
+        var response = new EnrollmentOfCourseResponse
+        {
+            EnrollmentId = enrollment.EnrollmentId,
+            StudentId = enrollment.StudentId,
+            StudentName = enrollment.Student?.FullName,
+            EnrollDate = enrollment.EnrollDate,
+            Status = enrollment.Status
+        };
+
+        if (expands.Contains("student") && enrollment.Student != null)
+        {
+            response.Student = new StudentBriefResponse
+            {
+                StudentId = enrollment.Student.StudentId,
+                FullName = enrollment.Student.FullName,
+                Email = enrollment.Student.Email,
+                DateOfBirth = enrollment.Student.DateOfBirth
+            };
+        }
+
+        return response;
     }
 
     public async Task<EnrollmentResponse> GetByIdAsync(int id, string? expand = null)

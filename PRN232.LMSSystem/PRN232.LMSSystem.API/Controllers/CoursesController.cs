@@ -14,13 +14,13 @@ public class CoursesController : ControllerBase
     private readonly ICourseService _courseService;
     private readonly IDataShaper<CourseResponse> _dataShaper;
     private readonly IEnrollmentService _enrollmentService;
-    private readonly IDataShaper<EnrollmentResponse> _enrollmentDataShaper;
+    private readonly IDataShaper<EnrollmentOfCourseResponse> _enrollmentDataShaper;
 
     public CoursesController(
         ICourseService courseService,
         IDataShaper<CourseResponse> dataShaper,
         IEnrollmentService enrollmentService,
-        IDataShaper<EnrollmentResponse> enrollmentDataShaper)
+        IDataShaper<EnrollmentOfCourseResponse> enrollmentDataShaper)
     {
         _courseService = courseService;
         _dataShaper = dataShaper;
