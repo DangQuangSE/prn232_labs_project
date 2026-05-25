@@ -31,10 +31,10 @@ public class EnrollmentsController : ControllerBase
 
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<EnrollmentResponse>), 200)]
-    public async Task<IActionResult> GetById(int id, [FromQuery] string? expand = null, [FromQuery] string? fields = null)
+    public async Task<IActionResult> GetById(int id, [FromQuery] QueryParameters queryParams)
     {
-        var enrollment = await _enrollmentService.GetByIdAsync(id, expand);
-        var shapedData = _dataShaper.ShapeData(enrollment, fields);
+        var enrollment = await _enrollmentService.GetByIdAsync(id, queryParams.Expand);
+        var shapedData = _dataShaper.ShapeData(enrollment, queryParams.Fields);
         return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Enrollment retrieved successfully"));
     }
 

@@ -31,10 +31,10 @@ public class CoursesController : ControllerBase
 
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<CourseResponse>), 200)]
-    public async Task<IActionResult> GetById(int id, [FromQuery] string? expand = null, [FromQuery] string? fields = null)
+    public async Task<IActionResult> GetById(int id, [FromQuery] QueryParameters queryParams)
     {
-        var course = await _courseService.GetByIdAsync(id, expand);
-        var shapedData = _dataShaper.ShapeData(course, fields);
+        var course = await _courseService.GetByIdAsync(id, queryParams.Expand);
+        var shapedData = _dataShaper.ShapeData(course, queryParams.Fields);
         return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Course retrieved successfully"));
     }
 

@@ -31,10 +31,10 @@ public class SemestersController : ControllerBase
 
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<SemesterResponse>), 200)]
-    public async Task<IActionResult> GetById(int id, [FromQuery] string? fields = null)
+    public async Task<IActionResult> GetById(int id, [FromQuery] QueryParameters queryParams)
     {
-        var semester = await _semesterService.GetByIdAsync(id);
-        var shapedData = _dataShaper.ShapeData(semester, fields);
+        var semester = await _semesterService.GetByIdAsync(id, queryParams.Expand);
+        var shapedData = _dataShaper.ShapeData(semester, queryParams.Fields);
         return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Semester retrieved successfully"));
     }
 

@@ -50,7 +50,7 @@ public class SemesterService : ISemesterService
         return (semesters.Select(MapToResponse), pagination);
     }
 
-    public async Task<SemesterResponse> GetByIdAsync(int id)
+    public async Task<SemesterResponse> GetByIdAsync(int id, string? expand = null)
     {
         var semester = await _semesterRepository.GetByIdAsync(id, new List<string> { "Courses" })
             ?? throw new NotFoundException("Semester", id);

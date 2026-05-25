@@ -48,7 +48,7 @@ public class SubjectService : ISubjectService
         return (subjects.Select(MapToResponse), pagination);
     }
 
-    public async Task<SubjectResponse> GetByIdAsync(int id)
+    public async Task<SubjectResponse> GetByIdAsync(int id, string? expand = null)
     {
         var subject = await _subjectRepository.GetByIdAsync(id)
             ?? throw new NotFoundException("Subject", id);
