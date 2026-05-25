@@ -39,11 +39,15 @@ public class CourseService : ICourseService
         else
             orderBy = q => q.OrderBy(c => c.CourseId);
 
+        bool includeEnrollments = !string.IsNullOrWhiteSpace(queryParams.Expand) &&
+            queryParams.Expand.ToLower().Split(',').Contains("enrollments");
+
         var courses = await _courseRepository.GetCoursesWithCountAsync(
             filter: filter,
             orderBy: orderBy,
             page: queryParams.Page,
-            pageSize: queryParams.PageSize
+            pageSize: queryParams.PageSize,
+            includeEnrollments: includeEnrollments
         );
 
         return (courses.Select(c => MapToResponse(c, queryParams.Expand)), pagination);
@@ -51,7 +55,8 @@ public class CourseService : ICourseService
 
     public async Task<CourseResponse> GetByIdAsync(int id, string? expand = null)
     {
-        var courseWithCount = await _courseRepository.GetCourseWithCountByIdAsync(id)
+        bool includeEnrollments = expand?.ToLower().Split(',').Contains("enrollments") ?? false;
+        var courseWithCount = await _courseRepository.GetCourseWithCountByIdAsync(id, includeEnrollments)
             ?? throw new NotFoundException("Course", id);
 
         return MapToResponse(courseWithCount, expand);
@@ -117,6 +122,7 @@ public class CourseService : ICourseService
         if (!string.IsNullOrWhiteSpace(expand))
         {
             var expands = expand.ToLower().Split(',');
+
             if (expands.Contains("semester") && course.Semester != null)
             {
                 response.Semester = new SemesterResponse
@@ -126,6 +132,18 @@ public class CourseService : ICourseService
                     StartDate = course.Semester.StartDate,
                     EndDate = course.Semester.EndDate
                 };
+            }
+
+            if (expands.Contains("enrollments") && course.Enrollments != null)
+            {
+                response.Enrollments = course.Enrollments.Select(e => new CourseEnrollmentResponse
+                {
+                    EnrollmentId = e.EnrollmentId,
+                    StudentId = e.StudentId,
+                    StudentName = e.Student?.FullName ?? string.Empty,
+                    EnrollDate = e.EnrollDate,
+                    Status = e.Status
+                }).ToList();
             }
         }
 

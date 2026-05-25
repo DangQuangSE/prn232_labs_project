@@ -8,4 +8,14 @@ public class CourseResponse
     public string? SemesterName { get; set; }
     public int EnrollmentCount { get; set; }
     public SemesterResponse? Semester { get; set; }
+    public IEnumerable<CourseEnrollmentResponse>? Enrollments { get; set; }
+}
+
+public class CourseEnrollmentResponse
+{
+    public int EnrollmentId { get; set; }
+    public int StudentId { get; set; }
+    public string StudentName { get; set; } = string.Empty;
+    public DateTime EnrollDate { get; set; }
+    public string Status { get; set; } = string.Empty;
 }

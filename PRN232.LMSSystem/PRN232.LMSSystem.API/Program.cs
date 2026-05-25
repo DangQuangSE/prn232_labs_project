@@ -65,6 +65,7 @@ builder.Services.AddSwaggerGen(options =>
 
     options.ParameterFilter<LowercaseQueryParameterFilter>();
     options.OperationFilter<DefaultResponsesOperationFilter>();
+    options.OperationFilter<ExpandOptionsOperationFilter>();
 
     // Include XML comments from API project
     var apiXmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";

@@ -21,6 +21,7 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet]
+    [ExpandOptions("semester", "enrollments")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<CourseResponse>>), 200)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParams)
     {
@@ -30,6 +31,7 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [ExpandOptions("semester", "enrollments")]
     [ProducesResponseType(typeof(ApiResponse<CourseResponse>), 200)]
     public async Task<IActionResult> GetById(int id, [FromQuery] QueryParameters queryParams)
     {

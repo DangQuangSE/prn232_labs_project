@@ -21,6 +21,7 @@ public class StudentsController : ControllerBase
     }
 
     [HttpGet]
+    [ExpandOptions("enrollments")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<StudentResponse>>), 200)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParams)
     {
@@ -30,6 +31,7 @@ public class StudentsController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [ExpandOptions("enrollments")]
     [ProducesResponseType(typeof(ApiResponse<StudentResponse>), 200)]
     public async Task<IActionResult> GetById(int id, [FromQuery] QueryParameters queryParams)
     {
