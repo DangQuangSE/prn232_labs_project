@@ -9,6 +9,15 @@ public class StudentResponse
     public IEnumerable<EnrollmentBriefResponse>? Enrollments { get; set; }
 }
 
+/// <summary>Embedded student info without nested collections — used inside other resource responses.</summary>
+public class StudentBriefResponse
+{
+    public int StudentId { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public DateTime DateOfBirth { get; set; }
+}
+
 public class EnrollmentBriefResponse
 {
     public int EnrollmentId { get; set; }

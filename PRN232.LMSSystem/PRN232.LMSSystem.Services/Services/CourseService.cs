@@ -125,12 +125,13 @@ public class CourseService : ICourseService
 
             if (expands.Contains("semester") && course.Semester != null)
             {
-                response.Semester = new SemesterResponse
+                response.Semester = new SemesterBriefResponse
                 {
                     SemesterId = course.Semester.SemesterId,
                     SemesterName = course.Semester.SemesterName,
                     StartDate = course.Semester.StartDate,
-                    EndDate = course.Semester.EndDate
+                    EndDate = course.Semester.EndDate,
+                    CourseCount = course.Semester.Courses?.Count ?? 0
                 };
             }
 

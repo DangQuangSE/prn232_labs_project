@@ -147,7 +147,7 @@ public class EnrollmentService : IEnrollmentService
 
             if (expands.Contains("student") && enrollment.Student != null)
             {
-                response.Student = new StudentResponse
+                response.Student = new StudentBriefResponse
                 {
                     StudentId = enrollment.Student.StudentId,
                     FullName = enrollment.Student.FullName,
@@ -158,7 +158,7 @@ public class EnrollmentService : IEnrollmentService
 
             if (expands.Contains("course") && enrollment.Course != null)
             {
-                response.Course = new CourseResponse
+                response.Course = new CourseBriefResponse
                 {
                     CourseId = enrollment.Course.CourseId,
                     CourseName = enrollment.Course.CourseName,
