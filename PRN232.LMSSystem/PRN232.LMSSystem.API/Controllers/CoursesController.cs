@@ -13,11 +13,19 @@ public class CoursesController : ControllerBase
 {
     private readonly ICourseService _courseService;
     private readonly IDataShaper<CourseResponse> _dataShaper;
+    private readonly IEnrollmentService _enrollmentService;
+    private readonly IDataShaper<EnrollmentResponse> _enrollmentDataShaper;
 
-    public CoursesController(ICourseService courseService, IDataShaper<CourseResponse> dataShaper)
+    public CoursesController(
+        ICourseService courseService,
+        IDataShaper<CourseResponse> dataShaper,
+        IEnrollmentService enrollmentService,
+        IDataShaper<EnrollmentResponse> enrollmentDataShaper)
     {
         _courseService = courseService;
         _dataShaper = dataShaper;
+        _enrollmentService = enrollmentService;
+        _enrollmentDataShaper = enrollmentDataShaper;
     }
 
     [HttpGet]
@@ -38,6 +46,17 @@ public class CoursesController : ControllerBase
         var course = await _courseService.GetByIdAsync(id, queryParams.Expand);
         var shapedData = _dataShaper.ShapeData(course, queryParams.Fields);
         return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Course retrieved successfully"));
+    }
+
+    [HttpGet("{id}/enrollments")]
+    [ExpandOptions("student", "course")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<EnrollmentResponse>>), 200)]
+    public async Task<IActionResult> GetEnrollments(int id, [FromQuery] QueryParameters queryParams)
+    {
+        await _courseService.GetByIdAsync(id);
+        var (data, pagination) = await _enrollmentService.GetByCourseIdAsync(id, queryParams);
+        var shapedData = _enrollmentDataShaper.ShapeData(data, queryParams.Fields);
+        return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Course enrollments retrieved successfully", pagination));
     }
 
     [HttpPost]

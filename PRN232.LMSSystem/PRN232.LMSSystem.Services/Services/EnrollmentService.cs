@@ -60,6 +60,47 @@ public class EnrollmentService : IEnrollmentService
         return (enrollments.Select(e => MapToResponse(e, queryParams.Expand)), pagination);
     }
 
+    public async Task<(IEnumerable<EnrollmentResponse> Data, PaginationMetadata Pagination)> GetByCourseIdAsync(int courseId, QueryParameters queryParams)
+    {
+        var includes = new List<string> { "Student", "Course" };
+
+        if (!string.IsNullOrWhiteSpace(queryParams.Expand))
+        {
+            var expands = queryParams.Expand.ToLower().Split(',');
+            if (expands.Contains("course"))
+                includes.Add("Course.Semester");
+        }
+
+        Expression<Func<Enrollment, bool>> baseFilter = e => e.CourseId == courseId;
+
+        if (!string.IsNullOrWhiteSpace(queryParams.Search))
+        {
+            var searchLower = queryParams.Search.ToLower().Trim();
+            baseFilter = e => e.CourseId == courseId &&
+                (e.Status.ToLower().Contains(searchLower) ||
+                 e.Student.FullName.ToLower().Contains(searchLower));
+        }
+
+        int totalItems = await _enrollmentRepository.CountAsync(baseFilter);
+        var pagination = new PaginationMetadata(queryParams.Page, queryParams.PageSize, totalItems);
+
+        Func<IQueryable<Enrollment>, IOrderedQueryable<Enrollment>>? orderBy = null;
+        if (!string.IsNullOrWhiteSpace(queryParams.Sort))
+            orderBy = q => (IOrderedQueryable<Enrollment>)QueryHelper.ApplySort(q, queryParams.Sort);
+        else
+            orderBy = q => q.OrderBy(e => e.EnrollmentId);
+
+        var enrollments = await _enrollmentRepository.GetAllAsync(
+            filter: baseFilter,
+            orderBy: orderBy,
+            includeProperties: includes,
+            page: queryParams.Page,
+            pageSize: queryParams.PageSize
+        );
+
+        return (enrollments.Select(e => MapToResponse(e, queryParams.Expand)), pagination);
+    }
+
     public async Task<EnrollmentResponse> GetByIdAsync(int id, string? expand = null)
     {
         var includes = new List<string> { "Student", "Course" };
