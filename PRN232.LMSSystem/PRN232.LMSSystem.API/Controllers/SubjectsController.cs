@@ -22,6 +22,7 @@ public class SubjectsController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<SubjectResponse>>), 200)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParams)
     {
         var (data, pagination) = await _subjectService.GetAllAsync(queryParams);
@@ -31,15 +32,19 @@ public class SubjectsController : ControllerBase
 
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<SubjectResponse>), 200)]
-    public async Task<IActionResult> GetById(int id, [FromQuery] string? fields = null)
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetById(int id, [FromQuery] QueryParameters queryParams)
     {
-        var subject = await _subjectService.GetByIdAsync(id);
-        var shapedData = _dataShaper.ShapeData(subject, fields);
+        var subject = await _subjectService.GetByIdAsync(id, queryParams.Expand);
+        var shapedData = _dataShaper.ShapeData(subject, queryParams.Fields);
         return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Subject retrieved successfully"));
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<SubjectResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Create([FromBody] SubjectRequest request)
     {
         if (!ModelState.IsValid)
@@ -52,6 +57,9 @@ public class SubjectsController : ControllerBase
 
     [HttpPut("{id}")]
     [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Update(int id, [FromBody] SubjectRequest request)
     {
         if (!ModelState.IsValid)
@@ -63,6 +71,8 @@ public class SubjectsController : ControllerBase
 
     [HttpDelete("{id}")]
     [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Delete(int id)
     {
         await _subjectService.DeleteAsync(id);

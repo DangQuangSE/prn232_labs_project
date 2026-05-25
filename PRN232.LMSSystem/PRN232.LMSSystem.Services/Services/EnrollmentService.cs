@@ -60,6 +60,134 @@ public class EnrollmentService : IEnrollmentService
         return (enrollments.Select(e => MapToResponse(e, queryParams.Expand)), pagination);
     }
 
+    public async Task<(IEnumerable<EnrollmentOfCourseResponse> Data, PaginationMetadata Pagination)> GetByCourseIdAsync(int courseId, QueryParameters queryParams)
+    {
+        var includes = new List<string> { "Student" };
+
+        Expression<Func<Enrollment, bool>> baseFilter = e => e.CourseId == courseId;
+
+        if (!string.IsNullOrWhiteSpace(queryParams.Search))
+        {
+            var searchLower = queryParams.Search.ToLower().Trim();
+            baseFilter = e => e.CourseId == courseId &&
+                (e.Status.ToLower().Contains(searchLower) ||
+                 e.Student.FullName.ToLower().Contains(searchLower));
+        }
+
+        int totalItems = await _enrollmentRepository.CountAsync(baseFilter);
+        var pagination = new PaginationMetadata(queryParams.Page, queryParams.PageSize, totalItems);
+
+        Func<IQueryable<Enrollment>, IOrderedQueryable<Enrollment>>? orderBy = null;
+        if (!string.IsNullOrWhiteSpace(queryParams.Sort))
+            orderBy = q => (IOrderedQueryable<Enrollment>)QueryHelper.ApplySort(q, queryParams.Sort);
+        else
+            orderBy = q => q.OrderBy(e => e.EnrollmentId);
+
+        var enrollments = await _enrollmentRepository.GetAllAsync(
+            filter: baseFilter,
+            orderBy: orderBy,
+            includeProperties: includes,
+            page: queryParams.Page,
+            pageSize: queryParams.PageSize
+        );
+
+        var expands = queryParams.Expand?.ToLower().Split(',') ?? [];
+        return (enrollments.Select(e => MapToEnrollmentOfCourseResponse(e, expands)), pagination);
+    }
+
+    public async Task<(IEnumerable<EnrollmentOfStudentResponse> Data, PaginationMetadata Pagination)> GetByStudentIdAsync(int studentId, QueryParameters queryParams)
+    {
+        var includes = new List<string> { "Course" };
+
+        if (!string.IsNullOrWhiteSpace(queryParams.Expand))
+        {
+            var expands = queryParams.Expand.ToLower().Split(',');
+            if (expands.Contains("course"))
+                includes.Add("Course.Semester");
+        }
+
+        Expression<Func<Enrollment, bool>> baseFilter = e => e.StudentId == studentId;
+
+        if (!string.IsNullOrWhiteSpace(queryParams.Search))
+        {
+            var searchLower = queryParams.Search.ToLower().Trim();
+            baseFilter = e => e.StudentId == studentId &&
+                (e.Status.ToLower().Contains(searchLower) ||
+                 e.Course.CourseName.ToLower().Contains(searchLower));
+        }
+
+        int totalItems = await _enrollmentRepository.CountAsync(baseFilter);
+        var pagination = new PaginationMetadata(queryParams.Page, queryParams.PageSize, totalItems);
+
+        Func<IQueryable<Enrollment>, IOrderedQueryable<Enrollment>>? orderBy = null;
+        if (!string.IsNullOrWhiteSpace(queryParams.Sort))
+            orderBy = q => (IOrderedQueryable<Enrollment>)QueryHelper.ApplySort(q, queryParams.Sort);
+        else
+            orderBy = q => q.OrderBy(e => e.EnrollmentId);
+
+        var enrollments = await _enrollmentRepository.GetAllAsync(
+            filter: baseFilter,
+            orderBy: orderBy,
+            includeProperties: includes,
+            page: queryParams.Page,
+            pageSize: queryParams.PageSize
+        );
+
+        var expands2 = queryParams.Expand?.ToLower().Split(',') ?? [];
+        return (enrollments.Select(e => MapToEnrollmentOfStudentResponse(e, expands2)), pagination);
+    }
+
+    private EnrollmentOfStudentResponse MapToEnrollmentOfStudentResponse(Enrollment enrollment, string[] expands)
+    {
+        var response = new EnrollmentOfStudentResponse
+        {
+            EnrollmentId = enrollment.EnrollmentId,
+            CourseId = enrollment.CourseId,
+            CourseName = enrollment.Course?.CourseName,
+            EnrollDate = enrollment.EnrollDate,
+            Status = enrollment.Status
+        };
+
+        if (expands.Contains("course") && enrollment.Course != null)
+        {
+            response.Course = new CourseBriefResponse
+            {
+                CourseId = enrollment.Course.CourseId,
+                CourseName = enrollment.Course.CourseName,
+                SemesterId = enrollment.Course.SemesterId,
+                SemesterName = enrollment.Course.Semester?.SemesterName,
+                EnrollmentCount = enrollment.Course.Enrollments?.Count
+            };
+        }
+
+        return response;
+    }
+
+    private EnrollmentOfCourseResponse MapToEnrollmentOfCourseResponse(Enrollment enrollment, string[] expands)
+    {
+        var response = new EnrollmentOfCourseResponse
+        {
+            EnrollmentId = enrollment.EnrollmentId,
+            StudentId = enrollment.StudentId,
+            StudentName = enrollment.Student?.FullName,
+            EnrollDate = enrollment.EnrollDate,
+            Status = enrollment.Status
+        };
+
+        if (expands.Contains("student") && enrollment.Student != null)
+        {
+            response.Student = new StudentBriefResponse
+            {
+                StudentId = enrollment.Student.StudentId,
+                FullName = enrollment.Student.FullName,
+                Email = enrollment.Student.Email,
+                DateOfBirth = enrollment.Student.DateOfBirth
+            };
+        }
+
+        return response;
+    }
+
     public async Task<EnrollmentResponse> GetByIdAsync(int id, string? expand = null)
     {
         var includes = new List<string> { "Student", "Course" };
@@ -147,7 +275,7 @@ public class EnrollmentService : IEnrollmentService
 
             if (expands.Contains("student") && enrollment.Student != null)
             {
-                response.Student = new StudentResponse
+                response.Student = new StudentBriefResponse
                 {
                     StudentId = enrollment.Student.StudentId,
                     FullName = enrollment.Student.FullName,
@@ -158,7 +286,7 @@ public class EnrollmentService : IEnrollmentService
 
             if (expands.Contains("course") && enrollment.Course != null)
             {
-                response.Course = new CourseResponse
+                response.Course = new CourseBriefResponse
                 {
                     CourseId = enrollment.Course.CourseId,
                     CourseName = enrollment.Course.CourseName,

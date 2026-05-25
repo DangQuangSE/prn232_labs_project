@@ -9,7 +9,8 @@ public interface ICourseRepository : IGenericRepository<Course>
         Expression<Func<Course, bool>>? filter = null,
         Func<IQueryable<Course>, IOrderedQueryable<Course>>? orderBy = null,
         int? page = null,
-        int? pageSize = null);
+        int? pageSize = null,
+        bool includeEnrollments = false);
 
-    Task<CourseWithCount?> GetCourseWithCountByIdAsync(int id);
+    Task<CourseWithCount?> GetCourseWithCountByIdAsync(int id, bool includeEnrollments = false);
 }

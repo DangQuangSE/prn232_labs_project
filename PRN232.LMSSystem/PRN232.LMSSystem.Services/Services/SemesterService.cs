@@ -47,15 +47,15 @@ public class SemesterService : ISemesterService
             pageSize: queryParams.PageSize
         );
 
-        return (semesters.Select(MapToResponse), pagination);
+        return (semesters.Select(s => MapToResponse(s, queryParams.Expand)), pagination);
     }
 
-    public async Task<SemesterResponse> GetByIdAsync(int id)
+    public async Task<SemesterResponse> GetByIdAsync(int id, string? expand = null)
     {
         var semester = await _semesterRepository.GetByIdAsync(id, new List<string> { "Courses" })
             ?? throw new NotFoundException("Semester", id);
 
-        return MapToResponse(semester);
+        return MapToResponse(semester, expand);
     }
 
     public async Task<SemesterResponse> CreateAsync(SemesterRequest request)
@@ -103,10 +103,10 @@ public class SemesterService : ISemesterService
         EndDate = semester.EndDate
     };
 
-    private SemesterResponse MapToResponse(Semester semester)
+    private SemesterResponse MapToResponse(Semester semester, string? expand = null)
     {
         var bm = MapToBusinessModel(semester);
-        return new SemesterResponse
+        var response = new SemesterResponse
         {
             SemesterId = bm.SemesterId,
             SemesterName = bm.SemesterName,
@@ -114,5 +114,20 @@ public class SemesterService : ISemesterService
             EndDate = bm.EndDate,
             CourseCount = semester.Courses?.Count ?? 0
         };
+
+        if (!string.IsNullOrWhiteSpace(expand))
+        {
+            var expands = expand.ToLower().Split(',');
+            if (expands.Contains("courses") && semester.Courses != null)
+            {
+                response.Courses = semester.Courses.Select(c => new SemesterCourseResponse
+                {
+                    CourseId = c.CourseId,
+                    CourseName = c.CourseName
+                }).ToList();
+            }
+        }
+
+        return response;
     }
 }

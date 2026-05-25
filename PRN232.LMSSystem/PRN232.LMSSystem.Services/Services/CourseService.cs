@@ -39,6 +39,39 @@ public class CourseService : ICourseService
         else
             orderBy = q => q.OrderBy(c => c.CourseId);
 
+        bool includeEnrollments = !string.IsNullOrWhiteSpace(queryParams.Expand) &&
+            queryParams.Expand.ToLower().Split(',').Contains("enrollments");
+
+        var courses = await _courseRepository.GetCoursesWithCountAsync(
+            filter: filter,
+            orderBy: orderBy,
+            page: queryParams.Page,
+            pageSize: queryParams.PageSize,
+            includeEnrollments: includeEnrollments
+        );
+
+        return (courses.Select(c => MapToResponse(c, queryParams.Expand)), pagination);
+    }
+
+    public async Task<(IEnumerable<CourseBriefResponse> Data, PaginationMetadata Pagination)> GetBySemesterIdAsync(int semesterId, QueryParameters queryParams)
+    {
+        Expression<Func<Course, bool>> filter = c => c.SemesterId == semesterId;
+
+        if (!string.IsNullOrWhiteSpace(queryParams.Search))
+        {
+            var searchLower = queryParams.Search.ToLower().Trim();
+            filter = c => c.SemesterId == semesterId && c.CourseName.ToLower().Contains(searchLower);
+        }
+
+        int totalItems = await _courseRepository.CountAsync(filter);
+        var pagination = new PaginationMetadata(queryParams.Page, queryParams.PageSize, totalItems);
+
+        Func<IQueryable<Course>, IOrderedQueryable<Course>>? orderBy = null;
+        if (!string.IsNullOrWhiteSpace(queryParams.Sort))
+            orderBy = q => (IOrderedQueryable<Course>)QueryHelper.ApplySort(q, queryParams.Sort);
+        else
+            orderBy = q => q.OrderBy(c => c.CourseId);
+
         var courses = await _courseRepository.GetCoursesWithCountAsync(
             filter: filter,
             orderBy: orderBy,
@@ -46,12 +79,20 @@ public class CourseService : ICourseService
             pageSize: queryParams.PageSize
         );
 
-        return (courses.Select(c => MapToResponse(c, queryParams.Expand)), pagination);
+        return (courses.Select(c => new CourseBriefResponse
+        {
+            CourseId = c.Course.CourseId,
+            CourseName = c.Course.CourseName,
+            SemesterId = c.Course.SemesterId,
+            SemesterName = c.Course.Semester?.SemesterName,
+            EnrollmentCount = c.EnrollmentCount
+        }), pagination);
     }
 
     public async Task<CourseResponse> GetByIdAsync(int id, string? expand = null)
     {
-        var courseWithCount = await _courseRepository.GetCourseWithCountByIdAsync(id)
+        bool includeEnrollments = expand?.ToLower().Split(',').Contains("enrollments") ?? false;
+        var courseWithCount = await _courseRepository.GetCourseWithCountByIdAsync(id, includeEnrollments)
             ?? throw new NotFoundException("Course", id);
 
         return MapToResponse(courseWithCount, expand);
@@ -117,15 +158,29 @@ public class CourseService : ICourseService
         if (!string.IsNullOrWhiteSpace(expand))
         {
             var expands = expand.ToLower().Split(',');
+
             if (expands.Contains("semester") && course.Semester != null)
             {
-                response.Semester = new SemesterResponse
+                response.Semester = new SemesterBriefResponse
                 {
                     SemesterId = course.Semester.SemesterId,
                     SemesterName = course.Semester.SemesterName,
                     StartDate = course.Semester.StartDate,
-                    EndDate = course.Semester.EndDate
+                    EndDate = course.Semester.EndDate,
+                    CourseCount = course.Semester.Courses?.Count ?? 0
                 };
+            }
+
+            if (expands.Contains("enrollments") && course.Enrollments != null)
+            {
+                response.Enrollments = course.Enrollments.Select(e => new CourseEnrollmentResponse
+                {
+                    EnrollmentId = e.EnrollmentId,
+                    StudentId = e.StudentId,
+                    StudentName = e.Student?.FullName ?? string.Empty,
+                    EnrollDate = e.EnrollDate,
+                    Status = e.Status
+                }).ToList();
             }
         }
 

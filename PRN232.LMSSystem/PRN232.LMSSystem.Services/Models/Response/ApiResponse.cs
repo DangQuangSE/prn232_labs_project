@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace PRN232.LMSSystem.Services.Models.Response;
 
 public class ApiResponse<T>
@@ -5,6 +7,7 @@ public class ApiResponse<T>
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
     public T? Data { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public object? Errors { get; set; }
     public PaginationMetadata? Pagination { get; set; }
 

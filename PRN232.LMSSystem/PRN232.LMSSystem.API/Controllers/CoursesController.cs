@@ -13,15 +13,25 @@ public class CoursesController : ControllerBase
 {
     private readonly ICourseService _courseService;
     private readonly IDataShaper<CourseResponse> _dataShaper;
+    private readonly IEnrollmentService _enrollmentService;
+    private readonly IDataShaper<EnrollmentOfCourseResponse> _enrollmentDataShaper;
 
-    public CoursesController(ICourseService courseService, IDataShaper<CourseResponse> dataShaper)
+    public CoursesController(
+        ICourseService courseService,
+        IDataShaper<CourseResponse> dataShaper,
+        IEnrollmentService enrollmentService,
+        IDataShaper<EnrollmentOfCourseResponse> enrollmentDataShaper)
     {
         _courseService = courseService;
         _dataShaper = dataShaper;
+        _enrollmentService = enrollmentService;
+        _enrollmentDataShaper = enrollmentDataShaper;
     }
 
     [HttpGet]
+    [ExpandOptions("semester", "enrollments")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<CourseResponse>>), 200)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParams)
     {
         var (data, pagination) = await _courseService.GetAllAsync(queryParams);
@@ -30,16 +40,34 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [ExpandOptions("semester", "enrollments")]
     [ProducesResponseType(typeof(ApiResponse<CourseResponse>), 200)]
-    public async Task<IActionResult> GetById(int id, [FromQuery] string? expand = null, [FromQuery] string? fields = null)
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetById(int id, [FromQuery] QueryParameters queryParams)
     {
-        var course = await _courseService.GetByIdAsync(id, expand);
-        var shapedData = _dataShaper.ShapeData(course, fields);
+        var course = await _courseService.GetByIdAsync(id, queryParams.Expand);
+        var shapedData = _dataShaper.ShapeData(course, queryParams.Fields);
         return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Course retrieved successfully"));
+    }
+
+    [HttpGet("{id}/enrollments")]
+    [ExpandOptions("student")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<EnrollmentOfCourseResponse>>), 200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetEnrollments(int id, [FromQuery] QueryParameters queryParams)
+    {
+        await _courseService.GetByIdAsync(id);
+        var (data, pagination) = await _enrollmentService.GetByCourseIdAsync(id, queryParams);
+        var shapedData = _enrollmentDataShaper.ShapeData(data, queryParams.Fields);
+        return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Course enrollments retrieved successfully", pagination));
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<CourseResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Create([FromBody] CourseRequest request)
     {
         if (!ModelState.IsValid)
@@ -52,6 +80,9 @@ public class CoursesController : ControllerBase
 
     [HttpPut("{id}")]
     [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Update(int id, [FromBody] CourseRequest request)
     {
         if (!ModelState.IsValid)
@@ -63,6 +94,8 @@ public class CoursesController : ControllerBase
 
     [HttpDelete("{id}")]
     [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Delete(int id)
     {
         await _courseService.DeleteAsync(id);
