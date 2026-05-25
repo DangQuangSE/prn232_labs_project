@@ -23,6 +23,7 @@ public class EnrollmentsController : ControllerBase
     [HttpGet]
     [ExpandOptions("student", "course")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<EnrollmentResponse>>), 200)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParams)
     {
         var (data, pagination) = await _enrollmentService.GetAllAsync(queryParams);
@@ -33,6 +34,8 @@ public class EnrollmentsController : ControllerBase
     [HttpGet("{id}")]
     [ExpandOptions("student", "course")]
     [ProducesResponseType(typeof(ApiResponse<EnrollmentResponse>), 200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> GetById(int id, [FromQuery] QueryParameters queryParams)
     {
         var enrollment = await _enrollmentService.GetByIdAsync(id, queryParams.Expand);
@@ -42,6 +45,8 @@ public class EnrollmentsController : ControllerBase
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<EnrollmentResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Create([FromBody] EnrollmentRequest request)
     {
         if (!ModelState.IsValid)
@@ -54,6 +59,9 @@ public class EnrollmentsController : ControllerBase
 
     [HttpPut("{id}")]
     [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Update(int id, [FromBody] EnrollmentRequest request)
     {
         if (!ModelState.IsValid)
@@ -65,6 +73,8 @@ public class EnrollmentsController : ControllerBase
 
     [HttpDelete("{id}")]
     [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Delete(int id)
     {
         await _enrollmentService.DeleteAsync(id);

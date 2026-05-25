@@ -13,16 +13,25 @@ public class SemestersController : ControllerBase
 {
     private readonly ISemesterService _semesterService;
     private readonly IDataShaper<SemesterResponse> _dataShaper;
+    private readonly ICourseService _courseService;
+    private readonly IDataShaper<CourseBriefResponse> _courseDataShaper;
 
-    public SemestersController(ISemesterService semesterService, IDataShaper<SemesterResponse> dataShaper)
+    public SemestersController(
+        ISemesterService semesterService,
+        IDataShaper<SemesterResponse> dataShaper,
+        ICourseService courseService,
+        IDataShaper<CourseBriefResponse> courseDataShaper)
     {
         _semesterService = semesterService;
         _dataShaper = dataShaper;
+        _courseService = courseService;
+        _courseDataShaper = courseDataShaper;
     }
 
     [HttpGet]
     [ExpandOptions("courses")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<SemesterResponse>>), 200)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParams)
     {
         var (data, pagination) = await _semesterService.GetAllAsync(queryParams);
@@ -33,6 +42,8 @@ public class SemestersController : ControllerBase
     [HttpGet("{id}")]
     [ExpandOptions("courses")]
     [ProducesResponseType(typeof(ApiResponse<SemesterResponse>), 200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> GetById(int id, [FromQuery] QueryParameters queryParams)
     {
         var semester = await _semesterService.GetByIdAsync(id, queryParams.Expand);
@@ -40,8 +51,22 @@ public class SemestersController : ControllerBase
         return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Semester retrieved successfully"));
     }
 
+    [HttpGet("{id}/courses")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<CourseBriefResponse>>), 200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetCourses(int id, [FromQuery] QueryParameters queryParams)
+    {
+        await _semesterService.GetByIdAsync(id);
+        var (data, pagination) = await _courseService.GetBySemesterIdAsync(id, queryParams);
+        var shapedData = _courseDataShaper.ShapeData(data, queryParams.Fields);
+        return Ok(ApiResponse<object>.SuccessResponse(shapedData, "Semester courses retrieved successfully", pagination));
+    }
+
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<SemesterResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Create([FromBody] SemesterRequest request)
     {
         if (!ModelState.IsValid)
@@ -54,6 +79,9 @@ public class SemestersController : ControllerBase
 
     [HttpPut("{id}")]
     [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Update(int id, [FromBody] SemesterRequest request)
     {
         if (!ModelState.IsValid)
@@ -65,6 +93,8 @@ public class SemestersController : ControllerBase
 
     [HttpDelete("{id}")]
     [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Delete(int id)
     {
         await _semesterService.DeleteAsync(id);

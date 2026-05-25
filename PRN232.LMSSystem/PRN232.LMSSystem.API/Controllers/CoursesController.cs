@@ -31,6 +31,7 @@ public class CoursesController : ControllerBase
     [HttpGet]
     [ExpandOptions("semester", "enrollments")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<CourseResponse>>), 200)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParams)
     {
         var (data, pagination) = await _courseService.GetAllAsync(queryParams);
@@ -41,6 +42,8 @@ public class CoursesController : ControllerBase
     [HttpGet("{id}")]
     [ExpandOptions("semester", "enrollments")]
     [ProducesResponseType(typeof(ApiResponse<CourseResponse>), 200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> GetById(int id, [FromQuery] QueryParameters queryParams)
     {
         var course = await _courseService.GetByIdAsync(id, queryParams.Expand);
@@ -49,8 +52,10 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet("{id}/enrollments")]
-    [ExpandOptions("student", "course")]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<EnrollmentResponse>>), 200)]
+    [ExpandOptions("student")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<EnrollmentOfCourseResponse>>), 200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> GetEnrollments(int id, [FromQuery] QueryParameters queryParams)
     {
         await _courseService.GetByIdAsync(id);
@@ -61,6 +66,8 @@ public class CoursesController : ControllerBase
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<CourseResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Create([FromBody] CourseRequest request)
     {
         if (!ModelState.IsValid)
@@ -73,6 +80,9 @@ public class CoursesController : ControllerBase
 
     [HttpPut("{id}")]
     [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Update(int id, [FromBody] CourseRequest request)
     {
         if (!ModelState.IsValid)
@@ -84,6 +94,8 @@ public class CoursesController : ControllerBase
 
     [HttpDelete("{id}")]
     [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<IActionResult> Delete(int id)
     {
         await _courseService.DeleteAsync(id);

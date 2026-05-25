@@ -26,3 +26,14 @@ public class EnrollmentOfCourseResponse
     public DateTime EnrollDate { get; set; }
     public string Status { get; set; } = string.Empty;
 }
+
+/// <summary>Enrollment response used inside student context — omits redundant student fields.</summary>
+public class EnrollmentOfStudentResponse
+{
+    public int EnrollmentId { get; set; }
+    public int CourseId { get; set; }
+    public string? CourseName { get; set; }
+    public CourseBriefResponse? Course { get; set; }
+    public DateTime EnrollDate { get; set; }
+    public string Status { get; set; } = string.Empty;
+}
